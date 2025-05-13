@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-video_path = r"C:\New folder\Desktop\New folder (5)\final_croped.mp4"
+video_path = r"C:\New folder\Desktop\testing_video01.mp4"
 cap = cv2.VideoCapture(video_path)
 
 # top_left = (220, 95)
@@ -10,13 +10,12 @@ cap = cv2.VideoCapture(video_path)
 # box_thickness = 2
 
 top_left = (443, 195)       # (x1, y1)
-bottom_right = (701, 492)   # (x2, y2)
+bottom_right = (651, 492)   # (x2, y2)
 box_color = (0, 255, 0)    
 box_thickness = 2    
 
-
-min_area = 650
-aspect_ratio_range = (0.8, 2.2)
+min_area = 400
+aspect_ratio_range = (0.8, 3.0)
 
 first_detection_frame = None
 jamming_triggered = False
@@ -33,7 +32,7 @@ while cap.isOpened():
         break
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, fg_mask = cv2.threshold(gray, 145, 255, cv2.THRESH_BINARY)
+    _, fg_mask = cv2.threshold(gray, 143, 255, cv2.THRESH_BINARY)
 
     x1, y1 = top_left
     x2, y2 = bottom_right
@@ -52,17 +51,37 @@ while cap.isOpened():
                 valid_contour_count += 1
                 cv2.rectangle(frame, (x + x1, y + y1), (x + x1 + w, y + y1 + h), (0, 0, 255), 2)
 
-    if valid_contour_count >= 2:
-        current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+    # if valid_contour_count >= 2 :
+    #     current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+    #     if first_detection_frame is None:
+    #         first_detection_frame = current_frame
+    #     else:
+    #         frame_diff = current_frame - first_detection_frame
+    #         time_diff_sec = frame_diff / fps 
+    #         if 20>=time_diff_sec >= 12:
+    #             jamming_triggered = True
+    #         else:
+    #             first_detection_frame = current_frame
+
+    if valid_contour_count >=2:
+        current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))  # get current frame index
+
         if first_detection_frame is None:
-            first_detection_frame = current_frame
+            first_detection_frame= current_frame
+            last_detection_frame = current_frame
         else:
-            frame_diff = current_frame - first_detection_frame
-            time_diff_sec = frame_diff / fps 
-            if time_diff_sec >= 8:
+            last_detection_frame = current_frame
+            frame_diff = last_detection_frame - first_detection_frame
+            time_diff_sec = frame_diff / fps
+
+            if time_diff_sec >= 7:
                 jamming_triggered = True
-            else:
-                first_detection_frame = current_frame
+
+        # Reset after 20 seconds if jamming not triggered
+        window_diff = current_frame - first_detection_frame
+        if (window_diff / fps) > 20 and not jamming_triggered:
+            first_detection_frame = None
+            last_detection_frame = None 
 
     cv2.rectangle(frame, top_left, bottom_right, box_color, box_thickness)
 
@@ -87,3 +106,5 @@ while cap.isOpened():
 
 cap.release()
 cv2.destroyAllWindows()
+
+
